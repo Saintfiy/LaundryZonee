@@ -6,6 +6,19 @@ import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 import { supabase } from './supabaseClient.js'; // Pastikan path ini benar
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App.jsx';
+import './index.css';
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <BrowserRouter basename="/LaundryZonee">
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
+);
 
 dotenv.config(); // Memuat variabel lingkungan dari .env
 
