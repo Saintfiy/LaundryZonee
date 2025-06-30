@@ -6,19 +6,6 @@ import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 import { supabase } from './supabaseClient.js'; // Pastikan path ini benar
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
-import App from './App.jsx';
-import './index.css';
-
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <BrowserRouter basename="/LaundryZonee">
-      <App />
-    </BrowserRouter>
-  </React.StrictMode>
-);
 
 dotenv.config(); // Memuat variabel lingkungan dari .env
 
@@ -273,7 +260,7 @@ app.delete('/api/services/:id', authenticateToken, requireAdmin, async (req, res
   }
 });
 
-// ─────────────────────────────── orders ───────────────────────────────────────
+// ─────────────────────────────── Orders ───────────────────────────────────────
 // Debugging endpoints (bisa dihapus di produksi)
 app.get('/api/debug/tables', authenticateToken, requireAdmin, async (req, res) => {
   try {
@@ -348,7 +335,7 @@ app.get('/api/orders', authenticateToken, requireAdmin, async (req, res) => {
     }
 
     // Map data to flatten customer and service names
-    const formattedorders = data.map(order => ({
+    const formattedOrders = data.map(order => ({
       id: order.id,
       customer_name: order.users.name,
       customer_phone: order.users.phone,
@@ -360,8 +347,8 @@ app.get('/api/orders', authenticateToken, requireAdmin, async (req, res) => {
       created_at: order.created_at,
     }));
 
-    console.log('orders fetched successfully. Count:', formattedorders.length);
-    res.json(formattedorders);
+    console.log('Orders fetched successfully. Count:', formattedOrders.length);
+    res.json(formattedOrders);
   } catch (err) {
     console.error('Unexpected error fetching orders:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -804,8 +791,8 @@ app.get('/api/statistics', authenticateToken, async (req, res) => {
     const svc = services || [];
     const rep = reports  || [];
 
-    /* ---------- Monthly orders ---------- */
-    const monthlyorders = Array.from({ length: 6 }).map((_, i) => {
+    /* ---------- Monthly Orders ---------- */
+    const monthlyOrders = Array.from({ length: 6 }).map((_, i) => {
       const d = new Date();
       d.setMonth(d.getMonth() - i);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -837,7 +824,7 @@ app.get('/api/statistics', authenticateToken, async (req, res) => {
 
     /* ---------- Response ---------- */
     res.json({
-      monthlyorders,
+      monthlyOrders,
       servicePopularity,
       monthlyRevenue,
       totals: {

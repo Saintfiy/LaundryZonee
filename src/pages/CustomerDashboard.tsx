@@ -25,7 +25,7 @@ interface Order {
 
 const CustomerDashboard = () => {
   const { user, logout } = useAuth();
-  const [orders, setorders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [passwords, setPasswords] = useState({
@@ -37,10 +37,10 @@ const CustomerDashboard = () => {
   const [passwordSuccess, setPasswordSuccess] = useState('');
 
   useEffect(() => {
-    fetchorders();
+    fetchOrders();
   }, []);
 
-  const fetchorders = async () => {
+  const fetchOrders = async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch('http://localhost:3001/api/orders', {
@@ -51,7 +51,7 @@ const CustomerDashboard = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setorders(data);
+        setOrders(data);
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -339,7 +339,7 @@ const CustomerDashboard = () => {
           </motion.div>
         </div>
 
-        {/* orders List */}
+        {/* Orders List */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

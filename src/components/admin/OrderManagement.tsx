@@ -31,23 +31,22 @@ interface Order {
   created_at: string;
 }
 
-// PERBAIKAN: Interface untuk data Service dengan UUID
+// Interface untuk data Service - DIUPDATE untuk menggunakan UUID
 interface Service {
-  id: string; // UUID string, bukan number
+  id: string; // ✅ UBAH: dari number ke string untuk UUID
   name: string;
   price_per_kg: number;
   estimated_hours: number;
-  description?: string;
 }
 
 const OrderManagement = () => {
-  const [orders, setorders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showModal, setShowModal] = useState(false);
-  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null); // Untuk fitur edit, saat ini belum diimplementasikan penuh
   const [formData, setFormData] = useState({
     customer_name: '',
     customer_phone: '',
@@ -57,20 +56,21 @@ const OrderManagement = () => {
   });
 
   // Base URL untuk API backend
-  const API_BASE_URL = 'http://localhost:3001';
+  const API_BASE_URL = 'http://localhost:3001'; // Sesuaikan jika backend berjalan di port/host lain
 
   // Effect hook untuk memuat data saat komponen dimuat
   useEffect(() => {
-    fetchorders();
+    fetchOrders();
     fetchServices();
   }, []);
 
   // Fungsi untuk mengambil data pesanan dari API
-  const fetchorders = async () => {
+  const fetchOrders = async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
         console.error('No authentication token found.');
+        // Redirect to login or show error
         setLoading(false);
         return;
       }
@@ -83,7 +83,7 @@ const OrderManagement = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setorders(data);
+        setOrders(data);
       } else {
         const errorData = await response.json();
         console.error('Failed to fetch orders:', response.status, errorData);
@@ -100,11 +100,11 @@ const OrderManagement = () => {
   // Fungsi untuk mengambil data layanan dari API
   const fetchServices = async () => {
     try {
+      // Fetch services tidak memerlukan token jika endpointnya publik
       const response = await fetch(`${API_BASE_URL}/api/services`);
       if (response.ok) {
         const data = await response.json();
         setServices(data);
-        console.log('Services loaded:', data); // Debug
       } else {
         const errorData = await response.json();
         console.error('Failed to fetch services:', response.status, errorData);
@@ -122,7 +122,7 @@ const OrderManagement = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // PERBAIKAN UTAMA: Handle UUID service_id dengan benar
+  // Handler untuk submit form pembuatan pesanan baru - DIPERBAIKI
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -133,51 +133,15 @@ const OrderManagement = () => {
         return;
       }
 
-      // Validasi input
-      if (!formData.customer_name?.trim()) {
-        alert('Nama pelanggan wajib diisi.');
+      // Validasi input di frontend sebelum mengirim ke backend
+      if (!formData.customer_name || !formData.customer_phone || !formData.service_id || !formData.weight) {
+        alert('Please fill in all required fields (Customer Name, Phone, Service, Weight).');
         return;
       }
-
-      if (!formData.customer_phone?.trim()) {
-        alert('Nomor telepon wajib diisi.');
+      if (parseFloat(formData.weight) <= 0 || isNaN(parseFloat(formData.weight))) {
+        alert('Weight must be a positive number.');
         return;
       }
-
-      if (!formData.service_id || formData.service_id === '') {
-        alert('Silakan pilih layanan.');
-        return;
-      }
-
-      if (!formData.weight || formData.weight === '') {
-        alert('Berat wajib diisi.');
-        return;
-      }
-
-      // PERBAIKAN: Validasi UUID format
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(formData.service_id)) {
-        alert('Format ID layanan tidak valid. Silakan pilih layanan dari dropdown.');
-        return;
-      }
-
-      // Validasi weight
-      const weight = parseFloat(formData.weight);
-      if (isNaN(weight) || weight <= 0) {
-        alert('Berat harus berupa angka yang valid dan lebih dari 0.');
-        return;
-      }
-
-      // PERBAIKAN: Kirim service_id sebagai string UUID, bukan integer
-      const submitData = {
-        customer_name: formData.customer_name.trim(),
-        customer_phone: formData.customer_phone.trim(),
-        customer_address: formData.customer_address.trim(),
-        service_id: formData.service_id, // Kirim sebagai string UUID
-        weight: weight // Kirim sebagai number
-      };
-
-      console.log('Data yang akan dikirim:', submitData);
 
       const response = await fetch(`${API_BASE_URL}/api/orders`, {
         method: 'POST',
@@ -185,14 +149,16 @@ const OrderManagement = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(submitData),
+        body: JSON.stringify({
+          ...formData,
+          weight: parseFloat(formData.weight), // Pastikan dikirim sebagai number
+          service_id: formData.service_id, // ✅ UBAH: Kirim sebagai string UUID, bukan parseInt!
+        }),
       });
 
       if (response.ok) {
-        const result = await response.json();
-        console.log('Order berhasil dibuat:', result);
         alert('Order created successfully!');
-        await fetchorders(); // Refresh daftar pesanan
+        await fetchOrders(); // Refresh daftar pesanan
         handleCloseModal(); // Tutup modal dan reset form
       } else {
         const errorData = await response.json();
@@ -225,7 +191,7 @@ const OrderManagement = () => {
 
       if (response.ok) {
         alert('Order status updated successfully!');
-        await fetchorders(); // Refresh daftar pesanan
+        await fetchOrders(); // Refresh daftar pesanan
       } else {
         const errorData = await response.json();
         console.error('Error updating order status:', response.status, errorData);
@@ -257,7 +223,7 @@ const OrderManagement = () => {
 
       if (response.ok) {
         alert('Order deleted successfully!');
-        await fetchorders(); // Refresh daftar pesanan
+        await fetchOrders(); // Refresh daftar pesanan
       } else {
         const errorData = await response.json();
         console.error('Error deleting order:', response.status, errorData);
@@ -272,8 +238,8 @@ const OrderManagement = () => {
   // Handler untuk menutup modal dan mereset form
   const handleCloseModal = () => {
     setShowModal(false);
-    setEditingOrder(null);
-    setFormData({
+    setEditingOrder(null); // Reset editing state
+    setFormData({ // Reset form data
       customer_name: '',
       customer_phone: '',
       customer_address: '',
@@ -283,7 +249,7 @@ const OrderManagement = () => {
   };
 
   // Filter pesanan berdasarkan search term dan status
-  const filteredorders = orders.filter(order => {
+  const filteredOrders = orders.filter(order => {
     const matchesSearch = 
       order.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customer_phone.includes(searchTerm) ||
@@ -477,7 +443,7 @@ const OrderManagement = () => {
         </motion.div>
       </div>
 
-      {/* orders Table */}
+      {/* Orders Table */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -512,7 +478,7 @@ const OrderManagement = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
-              {filteredorders.map((order, index) => {
+              {filteredOrders.map((order, index) => {
                 const StatusIcon = getStatusIcon(order.status);
                 
                 return (
@@ -561,6 +527,12 @@ const OrderManagement = () => {
                       </select>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      {/* <button
+                        onClick={() => setEditingOrder(order)} // Untuk fitur edit
+                        className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-colors mr-2"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button> */}
                       <button
                         onClick={() => handleDelete(order.id)}
                         className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
@@ -574,7 +546,7 @@ const OrderManagement = () => {
             </tbody>
           </table>
 
-          {filteredorders.length === 0 && (
+          {filteredOrders.length === 0 && (
             <div className="p-12 text-center">
               <Package className="w-16 h-16 text-gray-600 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-400 mb-2">

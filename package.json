@@ -3,15 +3,12 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "homepage": "https://saintfiy.github.io/LaundryZonee",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"vite\"",
     "server": "node server/index.js",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.50.2",

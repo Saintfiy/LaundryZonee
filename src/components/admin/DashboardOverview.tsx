@@ -19,8 +19,7 @@ import {
   Package,
   DollarSign,
   Calendar,
-  Zap,
-  AlertCircle
+  Zap
 } from 'lucide-react';
 
 ChartJS.register(
@@ -36,7 +35,7 @@ ChartJS.register(
 );
 
 interface Statistics {
-  monthlyorders: Array<{ month: string; count: number }>;
+  monthlyOrders: Array<{ month: string; count: number }>;
   servicePopularity: Array<{ name: string; count: number }>;
   monthlyRevenue: Array<{ month: string; income: number; expense: number }>;
   totals: {
@@ -47,34 +46,9 @@ interface Statistics {
   };
 }
 
-// Default/fallback data
-const defaultStatistics: Statistics = {
-  monthlyorders: [
-    { month: '2024-01', count: 0 },
-    { month: '2024-02', count: 0 },
-    { month: '2024-03', count: 0 },
-  ],
-  servicePopularity: [
-    { name: 'Cuci Kering', count: 0 },
-    { name: 'Cuci Setrika', count: 0 },
-  ],
-  monthlyRevenue: [
-    { month: '2024-01', income: 0, expense: 0 },
-    { month: '2024-02', income: 0, expense: 0 },
-    { month: '2024-03', income: 0, expense: 0 },
-  ],
-  totals: {
-    total_orders: 0,
-    total_customers: 0,
-    total_employees: 0,
-    net_profit: 0,
-  },
-};
-
 const DashboardOverview = () => {
-  const [statistics, setStatistics] = useState<Statistics>(defaultStatistics);
+  const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchStatistics();
@@ -83,105 +57,57 @@ const DashboardOverview = () => {
   const fetchStatistics = async () => {
     try {
       const token = localStorage.getItem('token');
-      
-      if (!token) {
-        setError('No authentication token found');
-        setLoading(false);
-        return;
-      }
-
-      console.log('🔥 Fetching statistics...');
-      
       const response = await fetch('http://localhost:3001/api/statistics', {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
         },
       });
 
-      console.log('📡 Response status:', response.status);
-
       if (response.ok) {
         const data = await response.json();
-        console.log('📊 Statistics data:', data);
-        
-        // Validate and set data with fallbacks
-        setStatistics({
-          monthlyorders: data.monthlyorders || defaultStatistics.monthlyorders,
-          servicePopularity: data.servicePopularity || defaultStatistics.servicePopularity,
-          monthlyRevenue: data.monthlyRevenue || defaultStatistics.monthlyRevenue,
-          totals: {
-            total_orders: data.totals?.total_orders || 0,
-            total_customers: data.totals?.total_customers || 0,
-            total_employees: data.totals?.total_employees || 0,
-            net_profit: data.totals?.net_profit || 0,
-          }
-        });
-        setError(null);
-      } else {
-        const errorText = await response.text();
-        console.error('❌ API Error:', response.status, errorText);
-        setError(`API Error: ${response.status} - ${errorText}`);
+        setStatistics(data);
       }
     } catch (error) {
-      console.error('💥 Fetch Error:', error);
-      setError(`Network Error: ${error.message}`);
+      console.error('Error fetching statistics:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  function formatCurrency(amount: number) {
+  const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
     }).format(amount || 0);
-  }
+  };
 
-  // Loading state
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
-        <div className="ml-4 text-gray-400">Loading dashboard data...</div>
       </div>
     );
   }
 
-  // Error state
-  if (error) {
+  if (!statistics) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">Error Loading Dashboard</h3>
-          <p className="text-gray-400 mb-4">{error}</p>
-          <button
-            onClick={() => {
-              setError(null);
-              setLoading(true);
-              fetchStatistics();
-            }}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
+      <div className="text-center text-gray-400 h-64 flex items-center justify-center">
+        Error loading statistics
       </div>
     );
   }
 
   // Chart data
-  const monthlyordersData = {
-    labels: statistics.monthlyorders.map(item => {
+  const monthlyOrdersData = {
+    labels: statistics.monthlyOrders.map(item => {
       const [year, month] = item.month.split('-');
       return new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' });
     }),
     datasets: [
       {
         label: 'Pesanan',
-        data: statistics.monthlyorders.map(item => item.count),
+        data: statistics.monthlyOrders.map(item => item.count),
         borderColor: 'rgb(59, 130, 246)',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         tension: 0.4,
@@ -257,15 +183,6 @@ const DashboardOverview = () => {
 
   return (
     <div className="space-y-8">
-      {/* Debug Info - Remove in production */}
-      <div className="bg-gray-800/30 border border-gray-600 rounded-lg p-4 text-sm">
-        <p className="text-gray-300">
-          📊 Debug: orders: {statistics.totals.total_orders}, 
-          Customers: {statistics.totals.total_customers}, 
-          Employees: {statistics.totals.total_employees}
-        </p>
-      </div>
-
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => (
@@ -291,7 +208,7 @@ const DashboardOverview = () => {
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Monthly orders Chart */}
+        {/* Monthly Orders Chart */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -307,7 +224,7 @@ const DashboardOverview = () => {
           </div>
           <div style={{ height: '300px' }}>
             <Line
-              data={monthlyordersData}
+              data={monthlyOrdersData}
               options={{
                 responsive: true,
                 maintainAspectRatio: false,
